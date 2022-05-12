@@ -14,8 +14,10 @@ declare global {
 }
 
 export type RootStackParamList = {
+  SignIn: undefined;
   Root: NavigatorScreenParams<RootTabParamList> | undefined;
   Modal: undefined;
+  Direct: { type: 'DIRECT' | 'GROUP', id: string };
   NotFound: undefined;
 };
 

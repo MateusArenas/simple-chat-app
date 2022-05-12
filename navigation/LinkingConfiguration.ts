@@ -12,7 +12,11 @@ import { RootStackParamList } from '../types';
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [Linking.makeUrl('/')],
   config: {
+    initialRouteName: 'Root',
     screens: {
+      Direct: {
+        path: 'direct/:id', 
+      },
       Root: {
         screens: {
           TabOne: {
@@ -26,6 +30,9 @@ const linking: LinkingOptions<RootStackParamList> = {
             },
           },
         },
+      },
+      SignIn: {
+        path: 'signin', 
       },
       Modal: 'modal',
       NotFound: '*',
