@@ -12,6 +12,7 @@ import api from '../modules/api';
 import ContentLoader from '../components/ContentLoader'
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
+import { Ionicons } from '@expo/vector-icons';
 
 const ProfileDefault = require('../assets/images/account-circle.png')
 
@@ -44,6 +45,26 @@ export default function ConversationsScreen({ navigation }: RootTabScreenProps<'
         data={users}
         ItemSeparatorComponent={() => (<View style={{ width: '100%', height: 1, backgroundColor: borderColor }} />)}
         ListEmptyComponent={<ContentLoader width={width} contentColor={Colors[theme].text} />}
+        ListHeaderComponent={
+          <TouchableOpacity onPress={() => {
+            navigation.goBack();
+            navigation.navigate('CreateGroup')
+          }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 }}>
+                  <View style={[
+                    { marginVertical: 10, padding: 10, backgroundColor: borderColor, borderRadius: 100 },
+                  ]}>
+                    <Ionicons name="ios-people-sharp" size={30} color={tintColor} />
+                  </View>
+
+                  <View style={[{ flexGrow: 1, padding: 10, paddingVertical: 20, borderBottomWidth: 1, borderColor: borderColor }]}>
+                      <Text style={[
+                        { fontSize: 14, color: tintColor, padding: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+                      ]}>{'Adicionar Grupo'}</Text>
+                  </View>
+              </View>
+          </TouchableOpacity>
+        }
         renderItem={({ item, index }) => (
             <TouchableOpacity onPress={() => {
                 navigation.goBack();

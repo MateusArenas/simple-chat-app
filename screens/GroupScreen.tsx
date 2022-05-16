@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale'
 import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, useThemeColor, View } from '../components/Themed';
 import { useDebounceEffect } from '../hooks/useDebounce';
-import { RootTabScreenProps } from '../types';
+import { RootStackScreenProps, RootTabScreenProps } from '../types';
 
 import KeyboardSpacer from '../components/KeyboardSpacer';
 import { MentionInput, parseValue, PartType, getMentionValue, isMentionPartType, MentionSuggestionsProps, mentionRegEx, Part  } from 'react-native-controlled-mentions';
@@ -20,7 +20,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 
 const BackgroundDefault = require('../assets/images/chat-background-image.jpg')
 
-export default function GroupScreen({ navigation, route }: RootTabScreenProps<'TabOne'>) {
+export default function GroupScreen({ navigation, route }: RootStackScreenProps<'Group'>) {
   const borderColor = useThemeColor({ light: 'rgba(0,0,0,.1)', dark: 'rgba(255,255,255,.1)' }, 'background');
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
@@ -42,36 +42,40 @@ export default function GroupScreen({ navigation, route }: RootTabScreenProps<'T
 
   const users = { data: { users: [{ _id: '1', name: 'mateus' }, { _id: '2', name: 'alan' }] }, refetch: (params: any) => {} }
 
-  const [direct, setDirect] = React.useState<any>(null)
+  const [group, setGroup] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState<boolean>(false)
 
   React.useEffect(() => {
       (async () => {
-        const response = await api.get(`/users/${route.params?.id}`);
-        console.log(response?.data);
-        
-        setDirect(response?.data)
+        setLoading(true)
+        try {
+          const response = await api.get(`/groups/${route.params?.id}`);
+          console.log(response?.data);
+          setGroup(response?.data)
+        } catch (err) {
+          console.log(err);
+        } finally {
+          setLoading(false)
+        }
       })()
   }, [])
 
   function handleSendMessage () {
-    const dinamic = {
-        'GROUP': { group: route.params?.id },
-        'DIRECT': { direct: route.params?.id },
-    }
-    sendMessage({ content: message, 
+    sendMessage({ 
+        content: message, 
         mentions, 
-        receivers: [route.params?.id], 
-        ...(dinamic[route.params?.type] || {})
-    }, { direct })
+        receivers: group.members?.map(member => member?._id || member), 
+        group: route.params?.id
+    }, { group })
     setMentions([])
     setMessage('')
   }
 
   useFocusEffect(React.useCallback(() => {
     navigation.setOptions({
-        title: direct?.email
+        title: group?.name
     })
-  }, [direct]))
+  }, [group]))
 
   const partTypes: PartType[] = React.useMemo(() => [
     {
@@ -130,12 +134,7 @@ export default function GroupScreen({ navigation, route }: RootTabScreenProps<'T
             scrollEventThrottle={16}
             onEndReachedThreshold={0}
             // onEndReachedThreshold={0.5}
-            data={conversations?.find(conversation => {
-                if (route.params?.type === 'GROUP') {
-                    return conversation?.group?._id === route.params?.id
-                }
-                return conversation?.direct?._id === route.params?.id
-            })?.messages}
+            data={conversations?.find(conversation => conversation?.group?._id === route.params?.id)?.messages}
             ItemSeparatorComponent={() => (<View style={{ width: '100%', height: 4, backgroundColor: 'transparent' }} />)}
             contentContainerStyle={{ padding: 4, flexGrow: 1 }}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd()}

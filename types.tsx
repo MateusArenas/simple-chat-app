@@ -17,7 +17,9 @@ export type RootStackParamList = {
   SignIn: undefined;
   Root: NavigatorScreenParams<RootTabParamList> | undefined;
   Modal: undefined;
-  Direct: { type: 'DIRECT' | 'GROUP', id: string };
+  CreateGroup: undefined;
+  Direct: { id: string };
+  Group: { id: string };
   NotFound: undefined;
 };
 

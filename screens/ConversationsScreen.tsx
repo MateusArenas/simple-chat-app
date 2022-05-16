@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, FlatList, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Image, FlatList, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 
 import { formatDistance, formatISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -14,14 +14,21 @@ import useColorScheme from '../hooks/useColorScheme';
 import Colors from '../constants/Colors';
 import { useFocusEffect } from '@react-navigation/native';
 import AuthContext from '../contexts/auth';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+
+
+import ConversationCard, { SwipeoutButtonCallback } from '../components/ConversationCard';
+
 const ProfileDefault = require('../assets/images/account-circle.png')
+
 
 export default function ConversationsScreen({ navigation }: RootTabScreenProps<'TabOne'>) {
   const borderColor = useThemeColor({ light: 'rgba(0,0,0,.1)', dark: 'rgba(255,255,255,.1)' }, 'background');
   const tintColor = useThemeColor({}, 'tint');
+  const textColor = useThemeColor({}, 'text');
 
   const { user } = React.useContext(AuthContext)
-  const { loading, conversations } = React.useContext(MessagesContext)
+  const { loading, conversations, handleRemoveConversation } = React.useContext(MessagesContext)
 
   useFocusEffect(React.useCallback(() => {
       navigation.setOptions({
@@ -29,12 +36,47 @@ export default function ConversationsScreen({ navigation }: RootTabScreenProps<'
       })
   }, [user]))
 
-  React.useEffect(() => {
-      console.log({ loading });
-  }, [loading])
-
   const theme = useColorScheme()
   const { width } = useWindowDimensions()
+
+  const swipeoutBtnsLeft: SwipeoutButtonCallback = (item) => [
+    {
+        onPress: () => {},
+        type: 'default',
+        style: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+        component: ({ tintColor, style }) => (
+            <View style={[style]}>
+                <Ionicons name='logo-firefox' size={24} color={tintColor} />
+                <Text style={{ color: tintColor, fontWeight: '500', fontSize: 12, opacity: .8 }}>{'Mais'}</Text>
+            </View>
+        )
+    },
+  ]
+
+  const swipeoutBtnsRight: SwipeoutButtonCallback = (item) => [
+    {
+        onPress: () => {},
+        type: 'default',
+        style: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+        component: ({ tintColor, style }) => (
+            <View style={[style]}>
+                <Ionicons name='ellipsis-horizontal' size={24} color={tintColor} />
+                <Text style={{ color: tintColor, fontWeight: '500', fontSize: 12, opacity: .8 }}>{'Mais'}</Text>
+            </View>
+        )
+    },
+    {
+      onPress: () => handleRemoveConversation(item?._id),
+      type: 'delete',
+      style: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+      component: ({ tintColor, backgroundColor, style }) => (
+          <View style={[style]}>
+              <Ionicons name='archive' size={24} color={tintColor} />
+              <Text style={{ color: tintColor, fontWeight: '500', fontSize: 12, opacity: .8 }}>{'Remover'}</Text>
+          </View>
+      )
+    },
+  ]
 
 
   return (
@@ -42,59 +84,20 @@ export default function ConversationsScreen({ navigation }: RootTabScreenProps<'
         data={conversations}
         ItemSeparatorComponent={() => (<View style={{ width: '100%', height: 1, backgroundColor: borderColor }} />)}
         ListEmptyComponent={<ContentLoader width={width} contentColor={Colors[theme].text} />}
+        bounces={false}
         renderItem={({ item, index }) => (
-            <TouchableOpacity onPress={() => navigation.navigate('Direct', { id: item?.group?._id || item?.direct?._id })}>
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'  }}>
-                    <Image style={{ width: 60, height: 60, borderRadius: 80, backgroundColor: borderColor, margin: 10 }}
-                        defaultSource={ProfileDefault}
-                        source={{ uri: '' }}
-                    />
-
-                    <View style={[{ width: '50%', height: '100%', padding: 10 }]}>
-                        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{item?.group?.name || item?.direct?.email}</Text>
-                        <Text style={{ fontSize: 14, width: '100%' }}>
-                            {!(!item?.messages[0]?.self && item?.type === 'DIRECT') && (
-                                <Text style={{ fontSize: 14, fontWeight: 'bold', opacity: .5 }}>
-                                    {item?.lastMessage?.self ? 'Você: ' : `${item?.lastMessage?.user?.email}: `}
-                                </Text>
-                            )}
-                            {item?.lastMessage?.content}
-                        </Text>
-                    </View>
-
-                    <View style={{ alignItems: 'flex-end', padding: 10, flex: 1, justifyContent: 'space-evenly' }}>
-                        {!!item?.lastMessage?.updatedAt && (
-                            <Text numberOfLines={1} style={{ flex: 1, color: tintColor }}>
-                                {formatDistance(new Date(item?.lastMessage?.updatedAt), new Date(), { locale: ptBR, addSuffix: false })}
-                            </Text>
-                        )}
-                        <View style={[
-                            { width: 20, height: 20, borderRadius: 20, backgroundColor: tintColor },
-                            { alignItems: 'center', justifyContent: 'center' }
-                        ]}>
-                            <Text style={{ color: 'white' }}>{item?.news}</Text>
-                        </View>
-                    </View>
-                </View>
-            </TouchableOpacity>
+            <ConversationCard 
+                onPress={() => {
+                  if (item?.direct?._id || item?.direct) {
+                    navigation.navigate('Direct', { id: item?.direct?._id })
+                  } else if (item?.group?._id || item?.group) {
+                    navigation.navigate('Group', { id: item?.group?._id })
+                  }
+                }}
+                item={item}
+                swipeoutBtnsRight={swipeoutBtnsRight} swipeoutBtnsLeft={swipeoutBtnsLeft}
+            />
         )}
       />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});

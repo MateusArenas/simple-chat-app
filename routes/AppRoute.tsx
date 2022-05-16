@@ -14,6 +14,8 @@ import { Pressable, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import TabTwoScreen from '../screens/TabTwoScreen';
 import AuthContext from '../contexts/auth';
+import CreateGroupRoute from './CreateGroupRoute';
+import GroupScreen from '../screens/GroupScreen';
 
 const AppStack = createNativeStackNavigator();
 
@@ -24,8 +26,10 @@ export default function AppRoute() {
       <AppStack.Screen name="NotFound" component={NotFoundScreen} options={{ title: 'Oops!' }} />
 
       <AppStack.Screen name="Direct" component={DirectScreen} options={{ title: 'Oops!' }} />
+      <AppStack.Screen name="Group" component={GroupScreen} options={{ title: 'Oops!' }} />
       <AppStack.Group screenOptions={{ presentation: 'modal' }}>
         <AppStack.Screen name="Users" component={UsersScreen} />
+        <AppStack.Screen name="CreateGroup" component={CreateGroupRoute} options={{ title: 'CreateGroup', headerShown: false }} />
         <AppStack.Screen name="Modal" component={ModalScreen} />
       </AppStack.Group>
     </AppStack.Navigator>

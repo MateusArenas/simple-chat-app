@@ -17,6 +17,9 @@ const linking: LinkingOptions<RootStackParamList> = {
       Direct: {
         path: 'direct/:id', 
       },
+      Group: {
+        path: 'group/:id', 
+      },
       Root: {
         screens: {
           TabOne: {
