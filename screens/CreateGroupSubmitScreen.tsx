@@ -15,6 +15,7 @@ import AuthContext from '../contexts/auth';
 import api from '../modules/api';
 import { Ionicons } from '@expo/vector-icons';
 import CreateGroupContext from '../contexts/creategroup';
+import ConversationsContext from '../contexts/conversations';
 
 const ProfileDefault = require('../assets/images/account-circle.png')
 
@@ -25,7 +26,7 @@ export default function CreateGroupSubmitScreen({ navigation }: RootTabScreenPro
   const layout = useWindowDimensions();
 
   const { members, name, setName } = React.useContext(CreateGroupContext)
-  const { sendGroup } = React.useContext(MessagesContext)
+  const { sendGroup } = React.useContext(ConversationsContext)
 
   useFocusEffect(React.useCallback(() => {
     navigation.setOptions({ 

@@ -18,6 +18,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 
 import ConversationCard, { SwipeoutButtonCallback } from '../components/ConversationCard';
+import ConversationsContext from '../contexts/conversations';
+import api from '../modules/api';
 
 const ProfileDefault = require('../assets/images/account-circle.png')
 
@@ -27,8 +29,9 @@ export default function ConversationsScreen({ navigation }: RootTabScreenProps<'
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
 
-  const { user } = React.useContext(AuthContext)
-  const { loading, conversations, handleRemoveConversation } = React.useContext(MessagesContext)
+  const { user, signed } = React.useContext(AuthContext)
+  const { conversations, handleRemoveConversation, loading } = React.useContext(ConversationsContext)
+
 
   useFocusEffect(React.useCallback(() => {
       navigation.setOptions({

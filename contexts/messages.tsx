@@ -1,33 +1,103 @@
 import React from "react";
-import usePersistedState from "../hooks/usePersistedState";
 import api from "../modules/api";
 import socket from "../modules/socket";
 import AuthContext from "./auth";
 import uuid from 'react-native-uuid';
+import ConversationsContext, { conversationData } from "./conversations";
 
-interface conversationData {
-    _id?: string
-    group: { _id: string }
-    direct: { _id: string }
-    messages: Array<messageData>
-    lastMessage: messageData
+export class SimpleSearching {
+    data: any[];
+    constructor(data: any[]) {  // Constructor
+        this.data = data;
+    }
+
+    find (where: any) {
+        return this.data?.filter(item => {
+            return Object?.keys(where)
+            ?.map(key => {
+                
+                let query = where?.[key]
+    
+                if (typeof where?.[key] === 'object') {
+                    if (!Array.isArray(where?.[key])) {
+                        if (query?.$in) {
+                            return query?.$in?.find(q => q === (item?.[key]?._id || item?.[key]))
+                        } else {
+                        }
+                    } 
+                }
+                
+                let dinamc = item?.[key];
+                if (typeof item?.[key] === 'object') {
+                    if (!Array.isArray(item?.[key])) {
+                        // if (dinamc?.$in) {
+                            // return dinamc?.$in?.find(field => field === where?.[key])
+                        // } else {
+                            dinamc = dinamc?._id
+                            // }
+                        } else {
+                            return dinamc?.find(field => (field?._id || field) === where?.[key] )
+                        }
+                    }
+
+                return dinamc === where?.[key]
+            })
+            ?.reduce((acc, val) => acc&&val, true)
+        })
+    }
+
+    findOne (where: any) {
+        return this.data?.find(item => {
+            return Object?.keys(where)
+            ?.map(key => {
+                
+                let query = where?.[key]
+    
+                if (typeof where?.[key] === 'object') {
+                    if (!Array.isArray(where?.[key])) {
+                        if (query?.$in) {
+                            return query?.$in?.find(q => q === (item?.[key]?._id || item?.[key]))
+                        } else {
+                        }
+                    } 
+                }
+                
+                let dinamc = item?.[key];
+                if (typeof item?.[key] === 'object') {
+                    if (!Array.isArray(item?.[key])) {
+                        // if (dinamc?.$in) {
+                            // return dinamc?.$in?.find(field => field === where?.[key])
+                        // } else {
+                            dinamc = dinamc?._id
+                            // }
+                        } else {
+                            return dinamc?.find(field => (field?._id || field) === where?.[key] )
+                        }
+                    }
+
+                return dinamc === where?.[key]
+            })
+            ?.reduce((acc, val) => acc&&val, true)
+        })
+    }
 }
 
-interface messageData {
+export interface messageData {
     _id?: string
+    self: boolean
     outstanding?: string
     content: string
     conversations: Array<conversationData>
+    group: any
+    direct: any
 }
 
 interface MessagesContextData {
     loading: boolean
-    news: number
-    conversations: Array<any>
-    sendGroup: (group: { name: string, members: string[] }) => any
+    // news: number
+    messages: Array<messageData>
     sendMessage: (message: any, extra: any) => any
     removeMessage: (id: string) => any
-    handleRemoveConversation: (id: string) => any
 }
 
 const MessagesContext = React.createContext<MessagesContextData>({} as MessagesContextData)
@@ -37,35 +107,15 @@ export const MessagesProvider: React.FC = ({ children }) => {
 
     const [loading, setLoading] = React.useState<boolean>(false)
 
-    const [conversations, setConversations] = React.useState<Array<conversationData>>([] as Array<conversationData>);
+    // const [conversations, setConversations] = React.useState<Array<conversationData>>([] as Array<conversationData>);
 
     const [messages, setMessages] = React.useState<Array<messageData>>([] as Array<messageData>);
 
-    const [notifications, setNotifications] = React.useState<number>(0);
+    // const [notifications, setNotifications] = React.useState<number>(0);
     
-    const news = React.useMemo(() => conversations?.reduce((acc, conversation) => acc+conversation?.news, 0), [conversations])
+    // const news = React.useMemo(() => conversations?.reduce((acc, conversation) => acc+conversation?.news, 0), [conversations])
 
-    React.useEffect(() => {
-        if (signed) {
-            (async () => {
-                setLoading(true)
-                try {
-                    const response = await api.get(`/users/${user?._id}/conversations`);
-                    setConversations(response?.data?.results)
-                    console.log({ conv: response?.data?.results });
-                    
-                } catch (err) {
-                } finally {
-                    setLoading(false)
-                }
-            })()
-        }
-    }, [signed, user])
-
-
-    function sendGroup ({ name, members }: any) {
-        socket.emit('sendGroup', { name, members })  
-    }
+    const { setConversations } = React.useContext(ConversationsContext)
 
     function sendMessage (message: any, extra: any) {
         if (message?.content?.length > 0) {
@@ -78,27 +128,30 @@ export const MessagesProvider: React.FC = ({ children }) => {
             message.createdAt = new Date();
             message.user = user
             message.visualized = true;
+            if (message?.direct) {
+                message.conversations = [{ direct: { _id: message?.direct } }];
+                message.direct = { _id: message?.direct };
+            } else if (message?.group) {
+                message.conversations = [{ group: { _id: message?.group } }];
+                message.group = { _id: message?.group };
+            }
 
+            setMessages(messages => [message, ...messages])
+
+            
             setConversations(conversations => {
-                const existsConversation = conversations.find(item => 
-                    item?.direct?._id === message?.direct && item?.group?._id == message?.group
-                )
+                const lastMessage = message
 
-                if (existsConversation) {
-                    return conversations?.map(conversation => {
-                        if (conversation?._id === existsConversation?._id) {
-                                conversation.messages.unshift(message)
-                                conversation.lastMessage = message
-                        }
-                        return conversation
-                    })
+                const Conversation = new SimpleSearching(conversations)
+                
+                const conversation = Conversation?.findOne({ direct: message?.direct?._id, group: message?.group?._id })
+
+                if (conversation) {
+                    conversation.lastMessage = lastMessage
+                    return [conversation, ...conversations?.filter(item => item?._id !== conversation?._id)]
                 }
 
-                const conversation = {
-                    user, direct: { _id: message?.direct }, group: { _id: message?.group }, messages: [message]
-                }
-
-                return [...conversations, conversation]
+                return [{ user, news: 0, direct: message?.direct, group: message?.group, lastMessage, messages: [] }, ...conversations]
             })         
         }
     }
@@ -108,110 +161,98 @@ export const MessagesProvider: React.FC = ({ children }) => {
         // setMessages(messages => messages.filter(message => message?._id !== id))
     }
 
-    async function handleRemoveConversation (id: string) {
-        try {
-            const { data: conversation } = await api.delete(`/conversations/${id}`);
-            setConversations(conversations => conversations?.filter(item => item?._id !== conversation?._id))
-        } catch (err) {
-            console.log(err);
-        }
-    }
-
     function handleReconnect () {
-        conversations?.forEach(conversation => {
-            conversation?.messages?.forEach(message => {
-                if (!message?._id) {
-                    socket.emit('sendMessage', { ...message })  
-                }
-            })
-        })
-    }
-
-    function handleReceivedConversation (conversation: conversationData) {
-        console.log({ conversation });
-        
-        setConversations(conversations => {
-            const existsConversation = conversations.find(item => 
-                item?.direct?._id == conversation?.direct?._id &&  item?.group?._id == conversation?.group?._id
-            )
-
-            if (existsConversation) {
-                return conversations?.map(conv => {
-                    const existsConversation = conversations.find(item => 
-                        item?.direct?._id == conv?.direct?._id &&  item?.group?._id == conv?.group?._id
-                    )
-                    if (existsConversation) {
-                        return { ...conversation, messages: [] }
-                    }
-
-                    return conv
-                })
+        messages?.forEach(message => {
+            if (!message?._id) {
+                socket.emit('sendMessage', { ...message })  
             }
-
-            return [{ ...conversation, messages: [] }, ...conversations]
         })
     }
+
 
     function handleReceivedMessage (message: messageData) {
+        // essa parte é a implementação da inserção da mensagen
+        setMessages(messages => {
+            const Message = new SimpleSearching(messages)
+
+            const existsOutstandingMessage = Message.findOne({ outstanding: message?.outstanding })
+
+            if (existsOutstandingMessage) {
+                return messages?.map(item => {
+                    if (item?.outstanding === existsOutstandingMessage?.outstanding) {
+                        return message;
+                    }
+                    return item
+                })
+            } 
+
+            return [message, ...messages]
+        })
+
+        // essa parte é a implementação da inserção da lastMessage e news em uma conversa
         setConversations(conversations => {
-            const existsConversation = conversations.find(item => message?.conversations?.find(conversation => item?._id === conversation?._id) )
+            const MessageConversation = new SimpleSearching(message?.conversations)
+            
+            const existsConversation = MessageConversation.findOne({ _id: { $in: conversations?.map(conversation => conversation?._id) } })
 
-            return conversations?.map(conversation => {
-                if (conversation?._id === existsConversation?._id) {
-                    const existsOutstandingMessage = conversation.messages?.find(item => item?.outstanding === message?.outstanding)
-                    if (existsOutstandingMessage) {
-
-                        conversation.messages = conversation.messages?.map(item => {
-                            if (item?.outstanding === existsOutstandingMessage?.outstanding) {
-                                return message;
-                            }
-                            return item
-                        })
-                    } else {
-                        conversation.messages.unshift(message)
+            if (existsConversation) {
+                return conversations?.map(conversation => {
+                    if (MessageConversation.findOne({ _id: conversation?._id })) {
                         if (!message?.self) {
                             conversation.news++;
                         }
                         conversation.lastMessage = message
                     }
-                }
-                return conversation
-            })
+                    return conversation;
+                })
+            }
+
+            return conversations
         })
     }
 
     function handleReceivedMessageReader ({ message, reader }: { message: messageData, reader: any  }) {
+
+        setMessages(messages => messages?.map(item => {
+            if (item?._id === message?._id) {
+                item.readers.push(reader)
+                item.read = item?.receivers?.map(receiver => 
+                    item?.readers?.find(reader => ((receiver?._id || receiver) === (reader?._id || reader) ))
+                )?.reduce((acc, cond) => acc&&cond, true)
+                item.visualized = true;
+                // conversation.news--;
+            }
+
+            return item
+        }))
+
         setConversations(conversations => {
-            const existsConversation = conversations.find(item => message?.conversations?.find(conversation => item?._id === conversation?._id) )
+            const MessageConversation = new SimpleSearching(message?.conversations)
 
-            return conversations?.map(conversation => {
-                if (conversation?._id === existsConversation?._id) {
+            const existsConversation = MessageConversation.findOne({ _id: { $in: conversations?.map(conversation => conversation?._id) } })
 
-                        conversation.messages = conversation.messages?.map(item => {
-                            if (item?._id === message?._id) {
-                                item.readers.push(reader)
-                                item.read = item?.receivers?.map(receiver => 
-                                    item?.readers?.find(reader => ((receiver?._id || receiver) === (reader?._id || reader) ))
-                                )?.reduce((acc, cond) => acc&&cond, true)
-                                item.visualized = true;
-                                conversation.news--;
-                            }
-                            return item
-                        })
-                }
-                return conversation
-            })
+            if (existsConversation) {
+                return conversations?.map(conversation => {
+                    if (MessageConversation.findOne({ _id: conversation?._id })) {
+                        conversation.news--;
+                        if (conversation.lastMessage?._id === message?._id) {
+                            conversation.lastMessage = message
+                        }
+                    }
+                    return conversation;
+                })
+            }
+
+            return conversations
         })
     }
 
     React.useEffect(() => { 
         socket.on('reconnect', handleReconnect)
-        socket.on('receivedConversation', handleReceivedConversation)
         socket.on('receivedMessage', handleReceivedMessage)
         socket.on('receivedMessageReader', handleReceivedMessageReader)
         return () => {
             socket.off("reconnect", handleReconnect);
-            socket.off('receivedConversation', handleReceivedConversation);
             socket.off('receivedMessage', handleReceivedMessage);
             socket.off('receivedMessageReader', handleReceivedMessageReader)
         }
@@ -227,10 +268,9 @@ export const MessagesProvider: React.FC = ({ children }) => {
   return (
     <MessagesContext.Provider value={{ 
         loading,
-        conversations, news,
-        sendGroup,
+        // conversations, news,
+        messages,
         sendMessage, removeMessage,
-        handleRemoveConversation
     }} >
         {children}
     </MessagesContext.Provider>

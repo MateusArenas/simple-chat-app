@@ -13,6 +13,7 @@ import ContentLoader from '../components/ContentLoader'
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
+import Avatar from '../components/Avatar';
 
 const ProfileDefault = require('../assets/images/account-circle.png')
 
@@ -50,14 +51,19 @@ export default function ConversationsScreen({ navigation }: RootTabScreenProps<'
             navigation.goBack();
             navigation.navigate('CreateGroup')
           }}>
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 }}>
-                  <View style={[
+              <View style={[
+                { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+                {borderBottomWidth: 1, borderColor: borderColor}
+              ]}>
+                  {/* <View style={[
                     { marginVertical: 10, padding: 10, backgroundColor: borderColor, borderRadius: 100 },
                   ]}>
                     <Ionicons name="ios-people-sharp" size={30} color={tintColor} />
-                  </View>
+                  </View> */}
 
-                  <View style={[{ flexGrow: 1, padding: 10, paddingVertical: 20, borderBottomWidth: 1, borderColor: borderColor }]}>
+                  <Avatar style={{ margin: 10 }} size={60} group />
+
+                  <View style={[{ flexGrow: 1, paddingVertical: 20 }]}>
                       <Text style={[
                         { fontSize: 14, color: tintColor, padding: 10, fontWeight: 'bold', textTransform: 'uppercase' },
                       ]}>{'Adicionar Grupo'}</Text>
@@ -71,9 +77,11 @@ export default function ConversationsScreen({ navigation }: RootTabScreenProps<'
                 navigation.navigate('Direct', { type: 'DIRECT', id: item?._id })
             }}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'  }}>
-                    <Image style={{ width: 60, height: 60, borderRadius: 80, backgroundColor: borderColor, margin: 10 }}
-                        defaultSource={ProfileDefault}
-                        source={{ uri: '' }}
+
+                    <Avatar style={{ margin: 10 }}
+                        size={60}
+                        uri={item?.uri}
+                        name={item?.email}
                     />
 
                     <View style={[{ flexGrow: 1, height: '100%', padding: 10 }]}>

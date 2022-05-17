@@ -22,10 +22,12 @@ import AuthContext from '../contexts/auth';
 
 import { moderateScale } from 'react-native-size-matters'
 import { Svg, Path } from 'react-native-svg'
+import ConversationsContext from '../contexts/conversations';
+import Avatar from '../components/Avatar';
 
 const BackgroundDefault = require('../assets/images/chat-background-image.jpg')
 
-const ProfileDefault = require('../assets/images/account-circle.png')
+const ProfileDefault = require('../assets/images/account.png')
 
 export default function DirectScreen({ navigation, route }: RootStackScreenProps<'Direct'>) {
   const borderColor = useThemeColor({ light: 'rgba(0,0,0,.1)', dark: 'rgba(255,255,255,.1)' }, 'background');
@@ -33,8 +35,33 @@ export default function DirectScreen({ navigation, route }: RootStackScreenProps
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
 
-  const { user } = React.useContext(AuthContext)
-  const { conversations, sendMessage, news } = React.useContext(MessagesContext)
+  const { messages, sendMessage } = React.useContext(MessagesContext)
+  const news = 0;
+
+  const [loading, setLoading] = React.useState(false)
+  const [data, setData] = React.useState({ total: 0, results: [] })
+
+  const results = [...messages?.filter(message => 
+    message?.conversations?.find(conversation => conversation?.direct?._id === route.params?.id)
+  ), ...data?.results]
+
+  const { user, signed } = React.useContext(AuthContext)
+
+  React.useEffect(() => {
+        if (signed) {
+            (async () => {
+                setLoading(true)
+                try {
+                    const response = await api.get(`/users/${user?._id}/conversations/directs/${route.params.id}/messages`, { params: { skip: results?.length || 0, limit: 100 } });
+                    setData(response?.data)
+                } catch (err) {
+                } finally {
+                    setLoading(false)
+                }
+            })()
+        }
+    }, [signed, user])
+
   
   const inputRef = React.useRef<TextInput>(null)
   const flatListRef = React.useRef<FlatList>(null)
@@ -76,11 +103,15 @@ export default function DirectScreen({ navigation, route }: RootStackScreenProps
       })()
   }, [])
 
+  React.useEffect(() => {
+      console.log({ lastMessage: messages[messages?.length-1] });
+  }, [messages])
+
   function handleSendMessage () {
     
     sendMessage({ content: message, 
         mentions, 
-        receivers: (user?._id !== route.params?.id) ? [user?._id, route.params?.id] : [route.params?.id], 
+        receivers: [route.params?.id], 
         direct: route.params?.id,
     }, { direct })
     setMentions([])
@@ -107,8 +138,9 @@ export default function DirectScreen({ navigation, route }: RootStackScreenProps
         headerTitle: ({ children, tintColor }) => (
             <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: 'transparent' }}>
                 <TouchableOpacity>
-                    <Image style={{ marginHorizontal: 10, marginLeft: -10, width: 36, height: 36, borderRadius: 60, backgroundColor: borderColor }}
-                        source={ProfileDefault}
+                    <Avatar style={{ marginHorizontal: 10, marginLeft: -10 }} 
+                        size={36}
+                        name={direct?.email}
                     />
                 </TouchableOpacity>
                 <View style={{ backgroundColor: 'transparent' }}>
@@ -173,7 +205,7 @@ export default function DirectScreen({ navigation, route }: RootStackScreenProps
             scrollEventThrottle={16}
             onEndReachedThreshold={0}
             // onEndReachedThreshold={0.5}
-            data={conversations?.find(conversation => conversation?.direct?._id === route.params?.id)?.messages}
+            data={results}
             ItemSeparatorComponent={() => (<View style={{ width: '100%', height: 4, backgroundColor: 'transparent' }} />)}
             contentContainerStyle={{ padding: 4, flexGrow: 1 }}
             // onContentSizeChange={() => flatListRef.current?.scrollToOffset({ offset: 0 })}

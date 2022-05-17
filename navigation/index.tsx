@@ -25,6 +25,7 @@ import LinkingConfiguration from './LinkingConfiguration';
 
 import Routes from '../routes'
 import { AuthProvider } from '../contexts/auth';
+import { ConversationsProvider } from '../contexts/conversations';
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
@@ -33,9 +34,11 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
       theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
     >
       <AuthProvider>
-        <MessagesProvider>
-          <Routes />
-        </MessagesProvider>
+        <ConversationsProvider>
+          <MessagesProvider>
+              <Routes />
+          </MessagesProvider>
+        </ConversationsProvider>
       </AuthProvider>
     </NavigationContainer>
   );

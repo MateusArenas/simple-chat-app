@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale'
 
 import Swipeout, { SwipeoutButtonProperties } from 'react-native-swipeout';
 import { useThemeColor, ViewProps } from '../Themed';
+import Avatar from '../Avatar';
 const ProfileDefault = require('../../assets/images/account-circle.png')
 
 interface SwipeoutButtonComponentProperties {
@@ -71,10 +72,10 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
                 <View style={[
                     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'  },
                 ]}>
-                    <Image style={{ width: 60, height: 60, borderRadius: 80, backgroundColor: borderColor, margin: 10 }}
-                        // defaultSource={ProfileDefault}
-                        source={ProfileDefault}
-                        // source={{ uri: '' }}
+                    <Avatar style={{ margin: 10 }}
+                        size={60}
+                        uri={item?.uri} group={item?.group}
+                        name={item?.direct ? item?.direct?.email : ''}
                     />
 
                     <View style={[{ width: '50%', height: '100%', padding: 10 }]}>
@@ -82,7 +83,7 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
                         <Text style={{ fontSize: 14, width: '100%' }}>
                             {!(!item?.messages[0]?.self && item?.type === 'DIRECT') && (
                                 <Text style={{ fontSize: 14, fontWeight: 'bold', opacity: .5 }}>
-                                    {(item?.lastMessage?.self ? 'Você: ' : `${item?.lastMessage?.user?.email.substr(0, 6)}: `)}
+                                    {(item?.lastMessage?.self ? 'Você: ' : `${item?.lastMessage?.user?.email?.substr(0, 6)}: `)}
                                 </Text>
                             )}
                             {item?.lastMessage?.content}

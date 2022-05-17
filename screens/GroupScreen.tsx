@@ -17,6 +17,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import socket from '../modules/socket';
 import api from '../modules/api';
 import { useHeaderHeight } from '@react-navigation/elements';
+import ConversationsContext from '../contexts/conversations';
+import AuthContext from '../contexts/auth';
 
 const BackgroundDefault = require('../assets/images/chat-background-image.jpg')
 
@@ -25,8 +27,30 @@ export default function GroupScreen({ navigation, route }: RootStackScreenProps<
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
 
-  const { conversations, sendMessage } = React.useContext(MessagesContext)
-  
+  const { messages, sendMessage } = React.useContext(MessagesContext)
+  const news = 0;
+
+  const [loading, setLoading] = React.useState(false)
+  const [data, setData] = React.useState({ total: 0, results: [] })
+
+  const results = [...messages?.filter(message =>  message?.group?._id === route.params?.id), ...data?.results]
+
+  const { user, signed } = React.useContext(AuthContext)
+
+  React.useEffect(() => {
+        if (signed) {
+            (async () => {
+                setLoading(true)
+                try {
+                    const response = await api.get(`/users/${user?._id}/conversations/groups/${route.params.id}/messages`);
+                    setData(response?.data)
+                } catch (err) {
+                } finally {
+                    setLoading(false)
+                }
+            })()
+        }
+    }, [signed, user])
 
   const inputRef = React.useRef<TextInput>(null)
   const flatListRef = React.useRef<FlatList>(null)
@@ -43,7 +67,7 @@ export default function GroupScreen({ navigation, route }: RootStackScreenProps<
   const users = { data: { users: [{ _id: '1', name: 'mateus' }, { _id: '2', name: 'alan' }] }, refetch: (params: any) => {} }
 
   const [group, setGroup] = React.useState<any>(null)
-  const [loading, setLoading] = React.useState<boolean>(false)
+  // const [loading, setLoading] = React.useState<boolean>(false)
 
   React.useEffect(() => {
       (async () => {
@@ -134,7 +158,7 @@ export default function GroupScreen({ navigation, route }: RootStackScreenProps<
             scrollEventThrottle={16}
             onEndReachedThreshold={0}
             // onEndReachedThreshold={0.5}
-            data={conversations?.find(conversation => conversation?.group?._id === route.params?.id)?.messages}
+            data={results}
             ItemSeparatorComponent={() => (<View style={{ width: '100%', height: 4, backgroundColor: 'transparent' }} />)}
             contentContainerStyle={{ padding: 4, flexGrow: 1 }}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
